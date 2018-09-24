@@ -224,30 +224,39 @@ namespace MGLib.Osu.Reader.Osb
                 SkipChar();
                 sng = -1;
             }
-            if (!(PeekChar() == ','))
+
+            switch (PeekChar())
             {
-                //整数部分
-                int integer = 0;
-                integer = StreamReadUntil(ch => !char.IsDigit(ch))
-                .Aggregate(integer, (val, ch) => 10 * val + (ch - 48));
-                result = integer;
-                //小数部分
-                if (PeekChar() == '.')
-                {
-                    SkipChar(); //吃掉'.'
-                    float dec = 0;
-                    dec = StreamReadUntil(ch => !char.IsDigit(ch))
-                    .Reverse()
-                    .Aggregate(dec, (val, ch) => (val + (ch - 48) / 10));
-                    result += dec;
-                }
-            }
-            if (PeekChar() == '∞')
-            {
-                result = float.Parse("∞");
-                SkipChar();
-            }
-            if (PeekChar() == ',') Reader.Read();
+                case '∞':
+                    result = float.PositiveInfinity;
+                    SkipChar();
+                    break;
+                case 'N':
+                    ReadLiteralString();
+                    result = float.NaN;
+                    break;
+                default:
+                    if (!(PeekChar() == ','))
+                    {
+                        //整数部分
+                        int integer = 0;
+                        integer = StreamReadUntil(ch => !char.IsDigit(ch))
+                        .Aggregate(integer, (val, ch) => 10 * val + (ch - 48));
+                        result = integer;
+                        //小数部分
+                        if (PeekChar() == '.')
+                        {
+                            SkipChar(); //吃掉'.'
+                            float dec = 0;
+                            dec = StreamReadUntil(ch => !char.IsDigit(ch))
+                            .Reverse()
+                            .Aggregate(dec, (val, ch) => (val + (ch - 48) / 10));
+                            result += dec;
+                        }
+                    }
+
+                    break;
+            }if (PeekChar() == ',') Reader.Read();
             return result * sng;
         }
         
