@@ -297,7 +297,7 @@ namespace MGLib.Osu.Reader.Osb
                         {
                             CommandType = type,
                             Trigger = ReadParamLiteralString(),
-                            Time = (ReadInt(), 0),
+                            Time = (ReadInt(), ReadInt()),
                             SubCommands = ReadCommands(),
                         });
                         break;
