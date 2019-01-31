@@ -41,6 +41,7 @@ namespace MGLib.Osu.Reader.Osb
         private readonly string FilePath;
         private StreamReader Reader;
         private readonly bool IsLargeOSB;
+        private bool IsEndOfLoop;
         public OsbElementList(string filePath)
         {
             FilePath = filePath;
@@ -271,35 +272,46 @@ namespace MGLib.Osu.Reader.Osb
             return list;
         }
 
-        private List<Command> ReadCommands()
+        private List<Command> ReadCommands(bool inner)
         {
             var result = new List<Command>(IsLargeOSB ? 20000 : 100);
             //命令是空格开始的，如果不是空格，说明命令读完了。。
-            while (PeekChar() == ' ')
+            while (PeekChar() == ' ' || IsEndOfLoop)
             {
+                if (!IsEndOfLoop) ReadChar();
+                else IsEndOfLoop = false;
+                if (inner && !(PeekChar() == ' '))
+                {
+                    IsEndOfLoop = true;
+                    return result;
+                }
                 SkipWhile(ch => ch == ' ');
                 var type = ReadParamLiteralString().ToCommandType();
                 //需要对Loop和Trigger特殊处理
                 switch (type)
                 {
                     case CommandType.Loop:
-                        result.Add(new Command
+                        var loopCmd = new Command
                         {
                             CommandType = type,
-                            Time = (ReadInt() , 0),
+                            Time = (ReadInt(), 0),
                             LoopCount = ReadInt(),
-                            //不能继续IEnumerable了，需要求值
-                            SubCommands = ReadCommands(),
-                        });
+                        };
+                        ReadLine();
+                        //不能继续IEnumerable了，需要求值
+                        loopCmd.SubCommands = ReadCommands(true);
+                        result.Add(loopCmd);
                         break;
                     case CommandType.Trigger:
-                        result.Add(new Command
+                        var trigCmd = new Command
                         {
                             CommandType = type,
                             Trigger = ReadParamLiteralString(),
-                            Time = (ReadInt(), 0),
-                            SubCommands = ReadCommands(),
-                        });
+                            Time = (ReadInt(), ReadInt()),
+                        };
+                        ReadLine();
+                        trigCmd.SubCommands = ReadCommands(true);
+                        result.Add(trigCmd);
                         break;
                     default:
                         result.Add(new Command
@@ -311,7 +323,7 @@ namespace MGLib.Osu.Reader.Osb
                         });
                         break;
                 }
-                ReadLine();
+                if (!IsEndOfLoop) ReadLine();
             }
             return result;
         }
@@ -348,7 +360,7 @@ namespace MGLib.Osu.Reader.Osb
             }
             ReadLine();
             //Commands需要立即求值，不允许IEnumerable
-            result.Commands = ReadCommands();
+            result.Commands = ReadCommands(false);
             return result;
         }
 
