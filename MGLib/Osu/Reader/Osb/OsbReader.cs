@@ -194,7 +194,7 @@ namespace MGLib.Osu.Reader.Osb
 
         private int ReadInt()
         {
-            int result = 0;
+            int result = int.MinValue;
             int sng = 1;
             if (PeekChar() == '-')
             {
