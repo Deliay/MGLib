@@ -1,4 +1,5 @@
 ﻿using MGLib.Osu.Model.Osb;
+using MGLib.Osu.Model.Osb.Commands;
 using System;
 using System.Linq;
 using System.Collections;
@@ -28,6 +29,7 @@ namespace MGLib.Osu.Reader.Osb
         public CommandType CommandType;
         public EasingType EasingType;
         public (int, int) Time;
+        //If CommandType is P, 0=H, 1=V, 2=A
         public IEnumerable<float> Params;
         public IEnumerable<Command> SubCommands;
         //For Loop Command
@@ -299,6 +301,15 @@ namespace MGLib.Osu.Reader.Osb
                             Trigger = ReadParamLiteralString(),
                             Time = (ReadInt(), 0),
                             SubCommands = ReadCommands(),
+                        });
+                        break;
+                    case CommandType.Parameter:
+                        result.Add(new Command
+                        {
+                            CommandType = type,
+                            EasingType = (EasingType)ReadFloat(),
+                            Time = (ReadInt(), ReadInt()),
+                            Params = new float[] { (int)ReadChar().ToParameterType() },
                         });
                         break;
                     default:
